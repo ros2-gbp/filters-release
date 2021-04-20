@@ -1,0 +1,13 @@
+Source: ros-galactic-filters
+Section: misc
+Priority: optional
+Maintainer: Tully Foote <tfoote@openrobotics.org>
+Build-Depends: debhelper (>= 9.0.0), libboost-dev, ros-galactic-ament-cmake, ros-galactic-ament-cmake-cppcheck, ros-galactic-ament-cmake-cpplint, ros-galactic-ament-cmake-gtest, ros-galactic-ament-cmake-uncrustify, ros-galactic-ament-cmake-xmllint, ros-galactic-pluginlib, ros-galactic-rclcpp, ros-galactic-ros-workspace
+Homepage: https://wiki.ros.org/filters
+Standards-Version: 3.9.2
+
+Package: ros-galactic-filters
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libboost-dev, ros-galactic-pluginlib, ros-galactic-rclcpp, ros-galactic-ros-workspace
+Description: This library provides a standardized interface for processing data as a sequence of filters.
+ This package contains a base class upon which to build specific implementations as well as an interface which dynamically loads filters based on runtime parameters.
