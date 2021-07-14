@@ -2,6 +2,11 @@
 Changelog for package filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.0.2 (2021-07-13)
+------------------
+* Solve statically parameter error (`#48 <https://github.com/ros/filters/issues/48>`_)
+* Contributors: Patrick Lascombz
+
 2.0.1 (2021-07-08)
 ------------------
 * Add Jon binney as a maintainer (`#54 <https://github.com/ros/filters/issues/54>`_)
