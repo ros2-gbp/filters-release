@@ -17,17 +17,26 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(Boost REQUIRED COMPONENTS headers)
+find_package(Boost QUIET COMPONENTS headers)
+if(NOT Boost_headers_FOUND)
+  find_package(Boost REQUIRED)
+endif()
 
 ##############################################################################
 # Build
 ##############################################################################
 
-add_library(realtime_circular_buffer
-  INTERFACE
-    include/filters/realtime_circular_buffer.h
-    include/filters/realtime_circular_buffer.hpp
-)
+
+if("${CMAKE_VERSION}" VERSION_GREATER_EQUAL 3.19)
+  add_library(realtime_circular_buffer
+    INTERFACE
+      include/filters/realtime_circular_buffer.h
+      include/filters/realtime_circular_buffer.hpp
+  )
+else()
+  add_library(realtime_circular_buffer INTERFACE)
+endif()
+
 target_link_libraries(realtime_circular_buffer
   INTERFACE
     Boost::boost
@@ -38,21 +47,34 @@ target_link_libraries(realtime_circular_buffer
 # to link to a target.
 # For more info, see the CMake Wiki on INTERFACE targets.
 # https://cmake.org/cmake/help/latest/command/add_library.html#interface-libraries
-add_library(filter_base
-  INTERFACE
-    include/filters/filter_base.h
-    include/filters/filter_base.hpp
-)
+
+
+if("${CMAKE_VERSION}" VERSION_GREATER_EQUAL 3.19)
+  add_library(filter_base
+    INTERFACE
+      include/filters/filter_base.h
+      include/filters/filter_base.hpp
+  )
+else()
+  add_library(filter_base INTERFACE)
+endif()
+
 target_link_libraries(filter_base
   INTERFACE
     rclcpp::rclcpp
 )
 
-add_library(filter_chain
-  INTERFACE
-    include/filters/filter_chain.h
-    include/filters/filter_chain.hpp
-)
+if("${CMAKE_VERSION}" VERSION_GREATER_EQUAL 3.19)
+  add_library(filter_chain
+    INTERFACE
+      include/filters/filter_chain.h
+      include/filters/filter_chain.hpp
+  )
+else()
+  add_library(filter_chain INTERFACE)
+endif()
+
+
 target_link_libraries(filter_chain
   INTERFACE
     filter_base
