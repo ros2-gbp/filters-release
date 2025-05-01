@@ -2,6 +2,35 @@
 Changelog for package filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.2.0 (2025-05-01)
+------------------
+* Handle dynamic reconfiguration of parameters
+* Enable the use of a default for parameters
+* Configure github action that runs tests
+* Add Windows support
+* Clean up filter chain parameter loading
+* Make read only configurable
+* Added parameter already declared check and allowed override
+* Contributors: Dominik Moss, Jeanine van Bruggen, Jonathan Binney, Silvio Traversaro
+
+2.1.2 (2024-04-17)
+------------------
+* Fix the RHEL-9 build.
+* Fix CMake 3.18
+* Add a virtual definition of configure() in MultiChannelFilterBase.
+* Contributors: Chris Lalancette, Jonathan Binney, Ryan Friedman
+
+2.1.1 (2024-03-02)
+------------------
+* Provide target based dependencies in cmake for filter_base and libraries.
+* Support Boost 1.71 (Ubuntu 20.04 Humble)
+* Allow to iterate over RealtimeCircularBuffer.
+* Change function signature to use pointer instead of array.
+  This really has no downstream consequence, but makes it so that
+  rosdoc2 can successfully generate documentation.
+* Contributors: Chris Lalancette, Daisuke Nishimatsu, Jonathan Binney,
+  Patrick Roncagliolo, Ryan Friedman, wep21
+
 2.1.0 (2021-07-14)
 ------------------
 * Fix compiler warnings+test failures on CI (`#56 <https://github.com/ros/filters/issues/56>`_)
