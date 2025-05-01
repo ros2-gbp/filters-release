@@ -39,6 +39,7 @@
 #include "pluginlib/class_loader.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rcl_interfaces/msg/parameter_type.hpp"
+#include <rclcpp/parameter_value.hpp>
 #include "rclcpp/rclcpp.hpp"
 
 #include "filters/filter_base.hpp"
@@ -57,6 +58,46 @@ struct FoundFilter
 };
 
 /**
+ * \brief Declare a string param of the given name. If it already exists, just get the value.
+ */
+inline bool auto_declare_string(
+  const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr & node_logger,
+  const rclcpp::node_interfaces::NodeParametersInterface::SharedPtr & node_params,
+  const std::string & param_name,
+  std::string & param_out)
+{
+  rcl_interfaces::msg::ParameterDescriptor param_desc;
+  param_desc.name = param_name;
+  param_desc.type = rcl_interfaces::msg::ParameterType::PARAMETER_STRING;
+  param_desc.read_only = true;
+  param_desc.dynamic_typing = false;
+
+  rclcpp::ParameterValue param_value;
+  try {
+    param_value = node_params->declare_parameter(
+      param_desc.name, rclcpp::ParameterType::PARAMETER_STRING, param_desc);
+  } catch (rclcpp::exceptions::ParameterAlreadyDeclaredException &) {
+    rclcpp::Parameter param = node_params->get_parameter(param_name);
+    param_value = param.get_parameter_value();
+  } catch (rclcpp::exceptions::InvalidParametersException &) {
+    RCLCPP_ERROR(
+      node_logger->get_logger(), "Tried to declare param with invalid name: %s",
+      param_name.c_str());
+    return false;
+  }
+
+  try {
+    param_out = param_value.get<std::string>();
+  } catch (rclcpp::exceptions::InvalidParameterTypeException &) {
+    RCLCPP_ERROR(
+      node_logger->get_logger(), "Parameter %s of invalid type (must be a string)",
+      param_name.c_str());
+    return false;
+  }
+  return true;
+}
+
+/**
  * \brief Read params and figure out what filters to load
  */
 inline bool
@@ -69,97 +110,52 @@ load_chain_config(
   // TODO(sloretz) error if someone tries to do filter0
   const std::string norm_param_prefix = impl::normalize_param_prefix(param_prefix);
 
+  const auto & param_overrides = node_params->get_parameter_overrides();
+
   // Read parameters for filter1..filterN
-  for (size_t filter_num = 1; filter_num > found_filters.size(); ++filter_num) {
+  for (size_t filter_num = 1; true; ++filter_num) {
     // Parameters in chain are prefixed with 'filterN.'
-    const std::string filter_n = "filter" + std::to_string(filter_num);
+    const std::string name_of_name_param = norm_param_prefix + "filter" +
+      std::to_string(filter_num) + ".name";
+    const std::string name_of_type_param = norm_param_prefix + "filter" +
+      std::to_string(filter_num) + ".type";
+    const std::string name_of_param_prefix_param = norm_param_prefix + "filter" +
+      std::to_string(filter_num) + ".params";
 
-    // Declare filterN.name and filterN.type
-    rcl_interfaces::msg::ParameterDescriptor name_desc;
-    name_desc.name = norm_param_prefix + filter_n + ".name";
-    name_desc.type = rcl_interfaces::msg::ParameterType::PARAMETER_STRING;
-    name_desc.read_only = false;
-    // Must be dynamically typed because later we undeclare it and redeclare
-    // it read-only, but statically typed params cannot be undeclared.
-    name_desc.dynamic_typing = true;
-    rcl_interfaces::msg::ParameterDescriptor type_desc;
-    type_desc.name = norm_param_prefix + filter_n + ".type";
-    type_desc.type = rcl_interfaces::msg::ParameterType::PARAMETER_STRING;
-    type_desc.read_only = false;
-    // Must be dynamically typed because later we undeclare it and redeclare
-    // it read-only, but statically typed params cannot be undeclared.
-    type_desc.dynamic_typing = true;
-
-    node_params->declare_parameter(
-      name_desc.name, rclcpp::ParameterValue(), name_desc);
-    node_params->declare_parameter(
-      type_desc.name, rclcpp::ParameterValue(), type_desc);
-
-    rclcpp::Parameter param_name;
-    rclcpp::Parameter param_type;
-
-    const bool got_name = node_params->get_parameter(name_desc.name, param_name);
-    const bool got_type = node_params->get_parameter(type_desc.name, param_type);
-
-    if (!got_name && !got_type) {
-      // Reached end of chain
+    if (param_overrides.find(name_of_name_param) == param_overrides.end()) {
       break;
-    } else if (got_name != got_type) {
-      RCLCPP_FATAL(
-        node_logger->get_logger(),
-        "%s and %s are required", name_desc.name.c_str(), type_desc.name.c_str());
+    }
+
+    std::string filter_name;
+    if (!auto_declare_string(node_logger, node_params, name_of_name_param, filter_name)) {
       return false;
     }
 
-    // Make sure 'name' and 'type' are strings
-    if (rclcpp::PARAMETER_STRING != param_name.get_type()) {
-      RCLCPP_FATAL(
-        node_logger->get_logger(),
-        "%s must be a string", name_desc.name.c_str());
-      return false;
-    }
-    if (rclcpp::PARAMETER_STRING != param_type.get_type()) {
-      RCLCPP_FATAL(
-        node_logger->get_logger(),
-        "%s must be a string", type_desc.name.c_str());
+    std::string filter_type;
+    if (!auto_declare_string(node_logger, node_params, name_of_type_param, filter_type)) {
       return false;
     }
 
-    FoundFilter found_filter;
-    found_filter.name = param_name.get_parameter_value().get<std::string>();
-    found_filter.type = param_type.get_parameter_value().get<std::string>();
-
-    // Make sure 'name' is unique
-    for (const auto & filter : found_filters) {
-      if (found_filter.name == filter.name) {
-        RCLCPP_FATAL(
-          node_logger->get_logger(),
-          "A filter with the name %s already exists", filter.name.c_str());
-        return false;
-      }
+    if (std::find_if(
+        found_filters.begin(), found_filters.end(),
+        [&](const FoundFilter & f) {return f.name == filter_name;}) != found_filters.end())
+    {
+      RCLCPP_FATAL(
+        node_logger->get_logger(),
+        "A filter with the name %s already exists", filter_name.c_str());
+      return false;
     }
 
     // Make sure 'type' is formated as 'package_name/filtername'
-    if (1 != std::count(found_filter.type.cbegin(), found_filter.type.cend(), '/')) {
+    if (1 != std::count(filter_type.cbegin(), filter_type.cend(), '/')) {
       RCLCPP_FATAL(
         node_logger->get_logger(),
-        "%s must be of form <package_name>/<filter_name>", found_filter.type.c_str());
+        "%s must be of form <package_name>/<filter_name>", filter_type.c_str());
       return false;
     }
 
     // Seems ok; store it for now; it will be loaded further down.
-    found_filter.param_prefix = norm_param_prefix + filter_n + ".params";
-    found_filters.push_back(found_filter);
-
-    // Redeclare 'name' and 'type' as read_only
-    node_params->undeclare_parameter(name_desc.name);
-    node_params->undeclare_parameter(type_desc.name);
-    name_desc.read_only = true;
-    type_desc.read_only = true;
-    node_params->declare_parameter(
-      name_desc.name, rclcpp::ParameterValue(found_filter.name), name_desc);
-    node_params->declare_parameter(
-      type_desc.name, rclcpp::ParameterValue(found_filter.type), type_desc);
+    found_filters.push_back({filter_name, filter_type, name_of_param_prefix_param});
   }
   return true;
 }
@@ -251,6 +247,8 @@ public:
     }
     logging_interface_ = node_logger;
     params_interface_ = node_params;
+    on_set_parameters_callback_handle_ = params_interface_->add_on_set_parameters_callback(
+      std::bind(&FilterChain<T>::reconfigureCB, this, std::placeholders::_1));
 
     std::vector<struct impl::FoundFilter> found_filters;
     if (!impl::load_chain_config(
@@ -296,6 +294,25 @@ public:
     return true;
   }
 
+  rcl_interfaces::msg::SetParametersResult reconfigureCB(std::vector<rclcpp::Parameter> parameters)
+  {
+    auto result = rcl_interfaces::msg::SetParametersResult();
+    result.successful = true;
+
+    for (auto & ref_ptr : reference_pointers_) {
+      std::vector<rclcpp::Parameter> parameters_subset;
+      for (auto parameter : parameters) {
+        if (parameter.get_name().find(ref_ptr->getParamPrefix()) != std::string::npos) {
+          parameters_subset.push_back(parameter);
+        }
+      }
+      if (!parameters_subset.empty() && !ref_ptr->reconfigureCB(parameters_subset).successful) {
+        result.successful = false;
+      }
+    }
+    return result;
+  }
+
 private:
   pluginlib::ClassLoader<filters::FilterBase<T>> loader_;
 
@@ -308,6 +325,8 @@ private:
 
   rclcpp::node_interfaces::NodeParametersInterface::SharedPtr params_interface_;
   rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr logging_interface_;
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
+    on_set_parameters_callback_handle_;
 };
 
 /**
@@ -442,11 +461,32 @@ public:
 
     // Everything went ok!
     reference_pointers_ = std::move(loaded_filters);
+    on_set_parameters_callback_handle_ = params_interface_->add_on_set_parameters_callback(
+      std::bind(&MultiChannelFilterChain<T>::reconfigureCB, this, std::placeholders::_1));
     // Allocate ahead of time
     buffer0_.resize(number_of_channels);
     buffer1_.resize(number_of_channels);
     configured_ = true;
     return true;
+  }
+
+  rcl_interfaces::msg::SetParametersResult reconfigureCB(std::vector<rclcpp::Parameter> parameters)
+  {
+    auto result = rcl_interfaces::msg::SetParametersResult();
+    result.successful = true;
+
+    for (auto & ref_ptr : reference_pointers_) {
+      std::vector<rclcpp::Parameter> parameters_subset;
+      for (auto parameter : parameters) {
+        if (parameter.get_name().find(ref_ptr->getParamPrefix()) != std::string::npos) {
+          parameters_subset.push_back(parameter);
+        }
+      }
+      if (!parameters_subset.empty() && !ref_ptr->reconfigureCB(parameters_subset).successful) {
+        result.successful = false;
+      }
+    }
+    return result;
   }
 
 private:
@@ -461,6 +501,8 @@ private:
 
   rclcpp::node_interfaces::NodeParametersInterface::SharedPtr params_interface_;
   rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr logging_interface_;
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
+    on_set_parameters_callback_handle_;
 };
 
 }  // namespace filters
