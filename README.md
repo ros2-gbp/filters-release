@@ -1,3 +1,26 @@
+## filters (rolling) - 2.2.0-1
+
+The packages in the `filters` repository were released into the `rolling` distro by running `/usr/bin/bloom-release -r rolling filters` on `Thu, 01 May 2025 00:22:29 -0000`
+
+The `filters` package was released.
+
+Version of package(s) in repository `filters`:
+
+- upstream repository: https://github.com/ros/filters.git
+- release repository: https://github.com/ros2-gbp/filters-release.git
+- rosdistro version: `2.1.2-1`
+- old version: `2.1.2-1`
+- new version: `2.2.0-1`
+
+Versions of tools used:
+
+- bloom version: `0.12.0`
+- catkin_pkg version: `1.0.0`
+- rosdep version: `0.25.1`
+- rosdistro version: `1.0.1`
+- vcstools version: `0.1.42`
+
+
 ## filters (rolling) - 2.1.2-1
 
 The packages in the `filters` repository were released into the `rolling` distro by running `/usr/bin/bloom-release --track rolling --rosdistro rolling filters` on `Wed, 17 Apr 2024 19:46:14 -0000`
