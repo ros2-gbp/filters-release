@@ -114,6 +114,46 @@ TEST_F(ChainTest, configuring) {
   EXPECT_NEAR(v1, v1a, epsilon);
 }
 
+/**
+ * In order to parallelize filtering, users may want to instantiate multiple filter chains using
+ * one set of parameters. In this case we need to not error out if the parameters have already
+ * beend declared by one of the other filter chain instances.
+ */
+TEST_F(ChainTest, ParallelChainConfiguring) {
+  double epsilon = 1e-9;
+  std::vector<rclcpp::Parameter> overrides;
+  overrides.emplace_back(
+    "ParallelChainMeanFilter.filter1.name",
+    std::string("parallel_chain_test"));
+  overrides.emplace_back(
+    "ParallelChainMeanFilter.filter1.type",
+    std::string("filters/MeanFilterFloat"));
+  overrides.emplace_back("ParallelChainMeanFilter.filter1.params.number_of_observations", 5);
+  auto node = make_node_with_params(overrides);
+
+  std::vector<std::shared_ptr<filters::FilterChain<float>>> chains {
+    std::make_shared<filters::FilterChain<float>>("float"),
+    std::make_shared<filters::FilterChain<float>>("float")};
+
+  for (auto & chain : chains) {
+    ASSERT_TRUE(
+      chain->configure(
+        "ParallelChainMeanFilter", node->get_node_logging_interface(),
+        node->get_node_parameters_interface()));
+  }
+
+  for (auto & chain : chains) {
+    float v1 = 1.;
+    float v1a = 9.;
+
+    EXPECT_TRUE(chain->update(v1, v1a));
+
+    chain->clear();
+
+    EXPECT_NEAR(v1, v1a, epsilon);
+  }
+}
+
 TEST_F(ChainTest, MisconfiguredNumberOfChannels) {
   filters::MultiChannelFilterChain<double> chain("double");
 
