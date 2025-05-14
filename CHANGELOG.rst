@@ -2,6 +2,11 @@
 Changelog for package filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.2.1 (2025-05-14)
+------------------
+* Ignore unused parameter in FilterBase::reconfigureCB()
+* Contributors: Christophe Bedard
+
 2.2.0 (2025-05-01)
 ------------------
 * Handle dynamic reconfiguration of parameters
