@@ -114,6 +114,46 @@ TEST_F(ChainTest, configuring) {
   EXPECT_NEAR(v1, v1a, epsilon);
 }
 
+/**
+ * In order to parallelize filtering, users may want to instantiate multiple filter chains using
+ * one set of parameters. In this case we need to not error out if the parameters have already
+ * beend declared by one of the other filter chain instances.
+ */
+TEST_F(ChainTest, ParallelChainConfiguring) {
+  double epsilon = 1e-9;
+  std::vector<rclcpp::Parameter> overrides;
+  overrides.emplace_back(
+    "ParallelChainMeanFilter.filter1.name",
+    std::string("parallel_chain_test"));
+  overrides.emplace_back(
+    "ParallelChainMeanFilter.filter1.type",
+    std::string("filters/MeanFilterFloat"));
+  overrides.emplace_back("ParallelChainMeanFilter.filter1.params.number_of_observations", 5);
+  auto node = make_node_with_params(overrides);
+
+  std::vector<std::shared_ptr<filters::FilterChain<float>>> chains {
+    std::make_shared<filters::FilterChain<float>>("float"),
+    std::make_shared<filters::FilterChain<float>>("float")};
+
+  for (auto & chain : chains) {
+    ASSERT_TRUE(
+      chain->configure(
+        "ParallelChainMeanFilter", node->get_node_logging_interface(),
+        node->get_node_parameters_interface()));
+  }
+
+  for (auto & chain : chains) {
+    float v1 = 1.;
+    float v1a = 9.;
+
+    EXPECT_TRUE(chain->update(v1, v1a));
+
+    chain->clear();
+
+    EXPECT_NEAR(v1, v1a, epsilon);
+  }
+}
+
 TEST_F(ChainTest, MisconfiguredNumberOfChannels) {
   filters::MultiChannelFilterChain<double> chain("double");
 
@@ -397,4 +437,98 @@ TEST_F(ChainTest, TenMultiChannelIncrementChains) {
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_EQ(11, v1a[i]);
   }
+}
+
+TEST_F(ChainTest, TestChainLength) {
+  filters::FilterChain<int> chain("int");
+
+  std::vector<rclcpp::Parameter> overrides;
+  overrides.emplace_back("OneIncrements.filter1.name", std::string("increment1"));
+  overrides.emplace_back("OneIncrements.filter1.type", std::string("filters/IncrementFilterInt"));
+
+  overrides.emplace_back("TwoIncrements.filter1.name", std::string("increment1"));
+  overrides.emplace_back("TwoIncrements.filter1.type", std::string("filters/IncrementFilterInt"));
+  overrides.emplace_back("TwoIncrements.filter2.name", std::string("increment2"));
+  overrides.emplace_back("TwoIncrements.filter2.type", std::string("filters/IncrementFilterInt"));
+
+  overrides.emplace_back("FiveIncrements.filter1.name", std::string("increment1"));
+  overrides.emplace_back("FiveIncrements.filter1.type", std::string("filters/IncrementFilterInt"));
+  overrides.emplace_back("FiveIncrements.filter2.name", std::string("increment2"));
+  overrides.emplace_back("FiveIncrements.filter2.type", std::string("filters/IncrementFilterInt"));
+  overrides.emplace_back("FiveIncrements.filter3.name", std::string("increment3"));
+  overrides.emplace_back("FiveIncrements.filter3.type", std::string("filters/IncrementFilterInt"));
+  overrides.emplace_back("FiveIncrements.filter4.name", std::string("increment4"));
+  overrides.emplace_back("FiveIncrements.filter4.type", std::string("filters/IncrementFilterInt"));
+  overrides.emplace_back("FiveIncrements.filter5.name", std::string("increment5"));
+  overrides.emplace_back("FiveIncrements.filter5.type", std::string("filters/IncrementFilterInt"));
+  auto node = make_node_with_params(overrides);
+
+  ASSERT_TRUE(
+    chain.configure(
+      "ZeroFilters", node->get_node_logging_interface(), node->get_node_parameters_interface()));
+  EXPECT_EQ(chain.get_length(), 0);
+  chain.clear();
+
+  ASSERT_TRUE(
+    chain.configure(
+      "TwoIncrements", node->get_node_logging_interface(), node->get_node_parameters_interface()));
+  EXPECT_EQ(chain.get_length(), 2);
+  chain.clear();
+
+  ASSERT_TRUE(
+    chain.configure(
+      "FiveIncrements", node->get_node_logging_interface(), node->get_node_parameters_interface()));
+  EXPECT_EQ(chain.get_length(), 5);
+}
+
+TEST_F(ChainTest, TestMultiChannelChainLength) {
+  filters::MultiChannelFilterChain<int> chain("int");
+
+  std::vector<rclcpp::Parameter> overrides;
+  overrides.emplace_back("OneIncrements.filter1.name", std::string("increment1"));
+  overrides.emplace_back(
+    "OneIncrements.filter1.type", std::string("filters/MultiChannelIncrementFilterInt"));
+
+  overrides.emplace_back("TwoIncrements.filter1.name", std::string("increment1"));
+  overrides.emplace_back(
+    "TwoIncrements.filter1.type", std::string("filters/MultiChannelIncrementFilterInt"));
+  overrides.emplace_back("TwoIncrements.filter2.name", std::string("increment2"));
+  overrides.emplace_back(
+    "TwoIncrements.filter2.type", std::string("filters/MultiChannelIncrementFilterInt"));
+
+  overrides.emplace_back("FiveIncrements.filter1.name", std::string("increment1"));
+  overrides.emplace_back(
+    "FiveIncrements.filter1.type", std::string("filters/MultiChannelIncrementFilterInt"));
+  overrides.emplace_back("FiveIncrements.filter2.name", std::string("increment2"));
+  overrides.emplace_back(
+    "FiveIncrements.filter2.type", std::string("filters/MultiChannelIncrementFilterInt"));
+  overrides.emplace_back("FiveIncrements.filter3.name", std::string("increment3"));
+  overrides.emplace_back(
+    "FiveIncrements.filter3.type", std::string("filters/MultiChannelIncrementFilterInt"));
+  overrides.emplace_back("FiveIncrements.filter4.name", std::string("increment4"));
+  overrides.emplace_back(
+    "FiveIncrements.filter4.type", std::string("filters/MultiChannelIncrementFilterInt"));
+  overrides.emplace_back("FiveIncrements.filter5.name", std::string("increment5"));
+  overrides.emplace_back(
+    "FiveIncrements.filter5.type", std::string("filters/MultiChannelIncrementFilterInt"));
+  auto node = make_node_with_params(overrides);
+
+  ASSERT_TRUE(
+    chain.configure(
+      3, "ZeroFilters", node->get_node_logging_interface(), node->get_node_parameters_interface()));
+  EXPECT_EQ(chain.get_length(), 0);
+  chain.clear();
+
+  ASSERT_TRUE(
+    chain.configure(
+      3, "TwoIncrements", node->get_node_logging_interface(),
+      node->get_node_parameters_interface()));
+  EXPECT_EQ(chain.get_length(), 2);
+  chain.clear();
+
+  ASSERT_TRUE(
+    chain.configure(
+      3, "FiveIncrements", node->get_node_logging_interface(),
+      node->get_node_parameters_interface()));
+  EXPECT_EQ(chain.get_length(), 5);
 }
