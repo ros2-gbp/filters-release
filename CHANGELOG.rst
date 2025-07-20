@@ -2,6 +2,29 @@
 Changelog for package filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.2.2 (2025-07-20)
+------------------
+* Added throw on unconfigured update call
+* Added chain length getter with tests
+* Make filters compile with MSVC
+* Contributors: Christoph Froehlich, oscarmartinez
+
+2.2.1 (2025-05-14)
+------------------
+* Ignore unused parameter in FilterBase::reconfigureCB()
+* Contributors: Christophe Bedard
+
+2.2.0 (2025-05-01)
+------------------
+* Handle dynamic reconfiguration of parameters
+* Enable the use of a default for parameters
+* Configure github action that runs tests
+* Add Windows support
+* Clean up filter chain parameter loading
+* Make read only configurable
+* Added parameter already declared check and allowed override
+* Contributors: Dominik Moss, Jeanine van Bruggen, Jonathan Binney, Silvio Traversaro
+
 2.1.2 (2024-04-17)
 ------------------
 * Fix the RHEL-9 build.
