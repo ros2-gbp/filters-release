@@ -1,0 +1,13 @@
+Source: ros-kilted-filters
+Section: misc
+Priority: optional
+Maintainer: Tully Foote <tfoote@openrobotics.org>
+Build-Depends: debhelper (>= 9.0.0), libboost-dev, ros-kilted-ament-cmake, ros-kilted-ament-cmake-cppcheck <!nocheck>, ros-kilted-ament-cmake-cpplint <!nocheck>, ros-kilted-ament-cmake-gtest <!nocheck>, ros-kilted-ament-cmake-uncrustify <!nocheck>, ros-kilted-ament-cmake-xmllint <!nocheck>, ros-kilted-pluginlib, ros-kilted-rclcpp, ros-kilted-ros-workspace
+Homepage: https://wiki.ros.org/filters
+Standards-Version: 3.9.2
+
+Package: ros-kilted-filters
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libboost-dev, ros-kilted-pluginlib, ros-kilted-rclcpp, ros-kilted-ros-workspace
+Description: This library provides a standardized interface for processing data as a sequence of filters.
+ This package contains a base class upon which to build specific implementations as well as an interface which dynamically loads filters based on runtime parameters.
