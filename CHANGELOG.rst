@@ -2,6 +2,13 @@
 Changelog for package filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.2.2 (2025-07-20)
+------------------
+* Added throw on unconfigured update call
+* Added chain length getter with tests
+* Make filters compile with MSVC
+* Contributors: Christoph Froehlich, oscarmartinez
+
 2.2.1 (2025-05-14)
 ------------------
 * Ignore unused parameter in FilterBase::reconfigureCB()
