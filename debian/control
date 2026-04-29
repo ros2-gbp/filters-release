@@ -1,0 +1,13 @@
+Source: ros-lyrical-filters
+Section: misc
+Priority: optional
+Maintainer: Tully Foote <tfoote@openrobotics.org>
+Build-Depends: debhelper (>= 9.0.0), libboost-dev, ros-lyrical-ament-cmake, ros-lyrical-ament-cmake-cppcheck <!nocheck>, ros-lyrical-ament-cmake-cpplint <!nocheck>, ros-lyrical-ament-cmake-gtest <!nocheck>, ros-lyrical-ament-cmake-uncrustify <!nocheck>, ros-lyrical-ament-cmake-xmllint <!nocheck>, ros-lyrical-pluginlib, ros-lyrical-rclcpp, ros-lyrical-ros-workspace
+Homepage: https://wiki.ros.org/filters
+Standards-Version: 3.9.2
+
+Package: ros-lyrical-filters
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libboost-dev, ros-lyrical-pluginlib, ros-lyrical-rclcpp, ros-lyrical-ros-workspace
+Description: This library provides a standardized interface for processing data as a sequence of filters.
+ This package contains a base class upon which to build specific implementations as well as an interface which dynamically loads filters based on runtime parameters.
